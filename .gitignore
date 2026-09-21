@@ -1,0 +1,8 @@
+# 抽出の判定に使う個人情報。公開しない。
+scripts/identity.local.json
+
+node_modules/
+dist/
+.env
+uploads/
+*.log

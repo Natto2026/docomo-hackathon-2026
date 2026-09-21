@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+uploads/
+*.log
+
+# ログイン情報とセッションは保存しない
+data/credentials.json
+data/sessions.json

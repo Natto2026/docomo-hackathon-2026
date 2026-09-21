@@ -1,0 +1,25 @@
+[
+  {
+    "id": "demo-user-1",
+    "name": "デモユーザー",
+    "bio": "このアプリを操作しているデモアカウントです。",
+    "isPrivate": true,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "avatarUrl": null
+  },
+  {
+    "id": "demo-user-2",
+    "name": "さくら",
+    "bio": "カフェと公園めぐりが好きです。",
+    "isPrivate": false,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "avatarUrl": null
+  },
+  {
+    "id": "demo-user-3",
+    "name": "たろう",
+    "bio": "ラーメンとイベント情報を投稿します。鍵アカウントです。",
+    "isPrivate": true,
+    "createdAt": "2026-09-01T00:00:00.000Z"
+  }
+]
