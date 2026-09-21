@@ -188,9 +188,17 @@ describe('DynamoDB 版で API を動かしたとき', () => {
   });
 
   it('既定（保存先を指定しない）では、提出時点のルーターがそのまま応答する', async () => {
-    const response = await request(createApp()).get('/api/users/demo-user-1/followers');
-    expect(response.status).toBe(200);
-    // data/follows.json にある承認済みフォロワー
-    expect(response.body.users.map((user: { id: string }) => user.id)).toEqual(expect.arrayContaining(['demo-user-2', 'demo-user-3']));
+    // 手元の backend/.env に FOLLOW_STORE=dynamodb があると、このテストが実際の DynamoDB を見に行ってしまう。
+    // 「指定しない」状態をテストの側で作り、.env の有無で結果が変わらないようにする
+    const saved = process.env.FOLLOW_STORE;
+    delete process.env.FOLLOW_STORE;
+    try {
+      const response = await request(createApp()).get('/api/users/demo-user-1/followers');
+      expect(response.status).toBe(200);
+      // data/follows.json にある承認済みフォロワー
+      expect(response.body.users.map((user: { id: string }) => user.id)).toEqual(expect.arrayContaining(['demo-user-2', 'demo-user-3']));
+    } finally {
+      if (saved !== undefined) process.env.FOLLOW_STORE = saved;
+    }
   });
 });
