@@ -1,5 +1,5 @@
 /**
- * 踏破率の API。ハッカソン後に自分ひとりで足したもの。
+ * 踏破率の API。発表で出た指摘を受けて、ハッカソン後に足したもの。
  *
  *   GET /api/coverage?latitude=&longitude=&userId=&radius=&limit=
  */

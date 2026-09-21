@@ -1,5 +1,5 @@
 /**
- * JSON 版のアダプタ。ハッカソン後に自分ひとりで足したもの。
+ * JSON 版のアダプタ。ハッカソン後に足したもの。
  *
  * 提出時点の followService には手を入れず、呼び出すだけで FollowStore の形に合わせる。
  * 保存先は followService と同じ data/follows.json。

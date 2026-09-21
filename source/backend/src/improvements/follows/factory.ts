@@ -1,5 +1,5 @@
 /**
- * 保存先の切り替え。ハッカソン後に自分ひとりで足したもの。
+ * 保存先の切り替え。ハッカソン後に足したもの。
  *
  *   FOLLOW_STORE        json（既定）| dynamodb
  *   FOLLOW_TABLE_NAME   DynamoDB のテーブル名（dynamodb のとき必須）

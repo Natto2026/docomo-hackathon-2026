@@ -1,5 +1,5 @@
 /**
- * ログインの API。ハッカソン後に自分ひとりで足したもの。
+ * ログインの API。ハッカソン後に足したもの。
  *
  *   POST /api/auth/register  利用者の登録
  *   POST /api/auth/login     ログイン（セッションの Cookie を渡す）
