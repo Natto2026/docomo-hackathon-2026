@@ -10,7 +10,7 @@
 | `env.example` | `backend/.env` に書き足す行の雛形（保存先、テーブル名、リージョン） |
 
 **現状**: テストは、条件式を解釈するインメモリの偽物に対して通っています。
-実際の AWS ではまだ動かしていません。下の手順を実行したら、結果をこの README に追記します。
+2026年9月22日に、下の手順で自分の AWS アカウントにテーブルを作り、確認用スクリプトを流しました。結果は末尾の「実行した結果」にあります。
 
 ## 課金について
 
@@ -63,7 +63,7 @@ aws --version
 | テーブル `follow-relations-dev` | `dynamodb:CreateTable` / `DeleteTable` / `DescribeTable` と、`Describe…`・`ListTagsOfResource`・`GetResourcePolicy` の読み取り | CloudFormation は呼び出した利用者の権限でテーブルを作り、作成後に設定を読み取るため |
 | テーブルとその GSI `gsi1` | `dynamodb:GetItem` / `PutItem` / `UpdateItem` / `DeleteItem` / `Query` | アプリと確認用スクリプトが使う操作。**`Scan` は許可していません**。設計どおり Scan を使っていなければ困らず、使っていれば権限エラーで分かります |
 
-この方針は、実際の AWS ではまだ試していません。手順4が権限不足で失敗したときは、
+この方針のままで、スタックの作成から確認用スクリプトまで通ることを確かめています。手順4が権限不足で失敗したときは、
 次のコマンドで出る失敗の理由に、足りない操作の名前が書かれています。それをポリシーに足してやり直します。
 
 ```powershell
@@ -81,7 +81,11 @@ aws configure
 
 ### 4. スタックを作る
 
+テンプレートに日本語のコメントがあるため、Windows では先に読み込みの文字コードを指定します。
+指定しないと `--template-body` の読み込みが「text contents could not be decoded」で失敗します（実際に起きました）。
+
 ```powershell
+$env:AWS_CLI_FILE_ENCODING = "UTF-8"
 aws cloudformation create-stack --stack-name follow-store-dev --template-body file://infra/follow-table.yaml --region ap-northeast-1
 aws cloudformation wait stack-create-complete --stack-name follow-store-dev --region ap-northeast-1
 aws dynamodb describe-table --table-name follow-relations-dev --region ap-northeast-1 --query "Table.[TableStatus,BillingModeSummary.BillingMode,GlobalSecondaryIndexes[0].IndexStatus]"
@@ -132,3 +136,39 @@ aws dynamodb describe-table --table-name follow-relations-dev --region ap-northe
 
 最後に、`backend/.env` の `FOLLOW_STORE` を `json` に戻すか行ごと消し、
 もう使わないなら IAM → ユーザー → `follow-store-dev` でアクセスキーを無効化または削除します。
+
+## 実行した結果
+
+2026年9月22日、東京リージョンの自分のアカウントで実行しました。利用者は、上の最小権限のポリシーだけを付けた IAM ユーザーです。
+
+```
+テーブル follow-relations-dev（ap-northeast-1）に対して確認します。
+  OK  リクエストを出す（保留中になる）
+  OK  同じリクエストをもう一度出すと失敗する（attribute_not_exists）
+  OK  保留中リクエストを GSI の Query で引ける
+  OK  承認する（保留中のときだけ更新）
+  OK  二重の承認は失敗する
+  OK  取り消したリクエストの承認は失敗し、項目が復活しない
+  OK  フォロワーを GSI の Query で引ける
+  OK  フォロワーの件数を Query（COUNT）で引ける
+  OK  保留中リクエストは空になっている
+  OK  フォロー中をテーブルの Query で引ける
+  OK  後片付け（自分が作った項目だけを消す）
+
+発行したコマンド
+  DeleteCommand: 3
+  GetCommand: 5
+  PutCommand: 3
+  QueryCommand: 5
+  UpdateCommand: 3
+  合計: 19
+  Scan: 発行していない
+
+結果: 11 / 11 段が成功
+```
+
+実機で分かったことは次のとおりです。
+
+- 条件式の文法、GSI を使った Query、条件の不成立のエラーは、インメモリの偽物と同じ結果になりました
+- Scan を許可していないポリシーのままで、すべての段が通りました
+- Windows の AWS CLI は、日本語のコメントを含むテンプレートを既定の文字コードでは読めませんでした。手順4に対処を書いています
