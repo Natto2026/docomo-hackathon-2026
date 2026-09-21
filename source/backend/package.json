@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node src/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:aws": "ts-node src/improvements/follows/smokeAws.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1136.0",
