@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ManageTheFollowStackOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DeleteStack"
+      ],
+      "Resource": "arn:aws:cloudformation:ap-northeast-1:ACCOUNT_ID:stack/follow-store-dev/*"
+    },
+    {
+      "Sid": "CreateAndDeleteTheFollowTableOnly",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeContributorInsights",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:ap-northeast-1:ACCOUNT_ID:table/follow-relations-dev",
+        "arn:aws:dynamodb:ap-northeast-1:ACCOUNT_ID:table/follow-relations-dev/index/*"
+      ]
+    },
+    {
+      "Sid": "ReadAndWriteItemsWithoutScan",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:ap-northeast-1:ACCOUNT_ID:table/follow-relations-dev",
+        "arn:aws:dynamodb:ap-northeast-1:ACCOUNT_ID:table/follow-relations-dev/index/gsi1"
+      ]
+    }
+  ]
+}

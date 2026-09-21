@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Follow relations table (one table + one GSI) for the post-hackathon DynamoDB follow store.
+  On-demand billing; nothing else is created.
+
+# キー設計の理由は src/improvements/follows/dynamoFollowStore.ts の冒頭に書いている。
+#
+#   テーブル  pk     = USER#<followerId>   sk     = FOLLOWS#<followeeId>
+#   gsi1      gsi1pk = USER#<followeeId>   gsi1sk = <status>#<followerId>
+#
+# 課金を抑えるための設定
+#   - BillingMode は PAY_PER_REQUEST（オンデマンド）。読み書きした回数だけの課金で、
+#     置いたままでも読み書きが無ければ読み書きの料金は出ない
+#   - ストリーム、ポイントインタイムリカバリ、TTL、Contributor Insights は付けない
+#   - GSI の射影は followerId だけ（INCLUDE）。一覧に必要なのは相手のIDだけなので
+#   - スタックを消せばテーブルも消える（DeletionPolicy: Delete）
+
+Parameters:
+  TableName:
+    Type: String
+    Default: follow-relations-dev
+    Description: DynamoDB table name. Set the same value to FOLLOW_TABLE_NAME in .env.
+
+Resources:
+  FollowTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: gsi1pk
+          AttributeType: S
+        - AttributeName: gsi1sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: gsi1
+          KeySchema:
+            - AttributeName: gsi1pk
+              KeyType: HASH
+            - AttributeName: gsi1sk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - followerId
+
+Outputs:
+  TableName:
+    Value: !Ref FollowTable
+  TableArn:
+    Value: !GetAtt FollowTable.Arn

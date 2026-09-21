@@ -15,8 +15,11 @@ import multer from 'multer';
 import authRouter from './improvements/auth/route';
 import { attachViewer, enforceIdentity } from './improvements/auth/middleware';
 import coverageRouter from './improvements/coverage/route';
+import { followStoreFromEnv } from './improvements/follows/factory';
+import { createFollowRouter } from './improvements/follows/route';
+import { FollowStore } from './improvements/follows/store';
 import placesRouter from './routes/places';
-import postsRouter from './routes/posts';
+import { createPostsRouter } from './routes/posts';
 import usersRouter from './routes/users';
 import { loadEnvFile } from './utils/env';
 
@@ -35,6 +38,14 @@ export type AppOptions = {
    * 本番で動かすなら true にする。
    */
   requireAuth?: boolean;
+  /**
+   * フォロー関係の保存先。省略すると環境変数 FOLLOW_STORE（既定は json）で決まる。
+   *
+   * json のときは何も差し込まず、提出時点のルーターと followService がそのまま動く。
+   * それ以外（DynamoDB、テスト用の差し替え）のときだけ、保存先を選べるルーターを
+   * 提出時のルーターの手前に置く。
+   */
+  followStore?: FollowStore;
 };
 
 export function createApp(options: AppOptions = {}) {
@@ -46,11 +57,15 @@ export function createApp(options: AppOptions = {}) {
   if (options.requireAuth) app.use(enforceIdentity());
   app.use('/uploads', express.static(path.join(BACKEND_ROOT, 'uploads')));
 
+  const followStore = options.followStore ?? followStoreFromEnv();
+  const replaceFollowStore = options.followStore !== undefined || followStore.kind !== 'json';
+
   app.get('/api/health', (_request, response) => response.json({ status: 'ok' }));
+  if (replaceFollowStore) app.use('/api/users', createFollowRouter(followStore));
   app.use('/api/users', usersRouter);
   app.use('/api/places', placesRouter);
   app.use('/api/coverage', coverageRouter);
-  app.use('/api/posts', postsRouter);
+  app.use('/api/posts', createPostsRouter(replaceFollowStore ? followStore : undefined));
 
   app.use((_request, response) =>
     response.status(404).json({ error: 'エンドポイントが見つかりません' }),
