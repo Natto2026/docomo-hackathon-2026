@@ -198,7 +198,7 @@ export function createFakeDynamo(definition: FakeTableDefinition = FOLLOW_TABLE)
     if (typeof pk !== 'string' || typeof sk !== 'string' || pk === '' || sk === '') {
       throw new ValidationError('キー（pk と sk）が正しく指定されていません');
     }
-    return `${pk} ${sk}`;
+    return `${pk}\u0000${sk}`;
   };
 
   const checkTable = (tableName: string | undefined) => {
