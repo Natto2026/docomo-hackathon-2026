@@ -1,5 +1,4 @@
 {
-  "name": "chikaku-hakken-backend-extract",
   "private": true,
   "version": "0.1.0",
   "description": "ハッカソンで自分が担当したバックエンドの抽出（単体で動かせる形にしたもの）",
