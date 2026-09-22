@@ -142,7 +142,7 @@ aws dynamodb describe-table --table-name follow-relations-dev --region ap-northe
 2026年9月22日、東京リージョンの自分のアカウントで実行した。利用者は、上の最小権限のポリシーだけを付けた IAM ユーザーである。
 
 ```
-テーブル follow-relations-dev（ap-northeast-1）に対して確認します。
+テーブル follow-relations-dev（ap-northeast-1）に対して確認します。実行ID: （毎回変わるため省略）
   OK  リクエストを出す（保留中になる）
   OK  同じリクエストをもう一度出すと失敗する（attribute_not_exists）
   OK  保留中リクエストを GSI の Query で引ける
