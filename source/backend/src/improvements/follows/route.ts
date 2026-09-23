@@ -3,7 +3,7 @@
  *
  * 提出時点の routes/users.ts は followService（JSON）を直接呼んでいて、保存先を差し替えられない。
  * そのファイルには手を入れず、同じ URL・同じ応答の形のルーターをここに作り、
- * improvements/auth と同じ要領で、提出時のルーターの手前に差し込む（server.ts）。
+ * improvements/auth と同じ要領で、提出時のルーターの手前に差し込む（improvements/app.ts）。
  *
  * 差し込むのは FOLLOW_STORE=dynamodb のときだけ。既定（json）では差し込まず、
  * 提出時点のルーターがそのまま応答する。

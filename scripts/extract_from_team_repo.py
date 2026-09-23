@@ -1,15 +1,23 @@
-"""チームの非公開リポジトリから、自分が単独で書いたファイルだけを取り出す。
+"""チームの非公開リポジトリから、自分が書いた・手を入れたファイルを取り出す。
 
 何をするか
-  1. チームのリポジトリで「自分だけが触ったファイル」を git の履歴から判定する
-  2. 想定した一覧と一致することを確かめてから source/ 配下へコピーする
+  1. チームのリポジトリの git の履歴から、ファイルを次の3つに分ける
+       SOLE_FILES     自分だけが触ったファイル
+       SHARED_FILES   自分と他のメンバーが触ったファイル
+       SUPPORT_FILES  自分は触っていないが、ビルドと起動に必要なファイル
+  2. 判定が想定した一覧と一致することを確かめてからコピーする
   3. 個人名・ローカルパス・鍵・メールアドレスが残っていないか検査する
   4. 1件でも見つかったら中止する（公開してしまわないため）
 
 何をしないか
-  - 他のメンバーが1行でも触ったファイルはコピーしない
+  - 上の一覧にないファイルはコピーしない（チームの README、チームが操作して溜まった投稿データ、
+    他のメンバーだけが書いた機能、Android 以外のプラットフォームのひな形）
   - git の履歴は引き継がない（他のメンバーの氏名とメールアドレスが混ざるため）
   - 配布資料・企画資料・アップロード画像はコピーしない
+
+テストデータの店名・地名・座標を架空のものに置き換える作業と、pubspec.yaml の文字化けの修正は、
+コピーのあとに手で行っている（内容は source/README.md の「置き換えたもの」）。
+そのため、source/ へ直接コピーし直すと置き換えが戻る。確かめるときは、第2引数で別の場所に出す。
 
 個人情報を持たせないため、判定に使う氏名やメールアドレスはこのファイルに
 書かず、バージョン管理の外に置いた設定から読む。
@@ -22,7 +30,7 @@
     }
 
 使い方
-    python scripts/extract_from_team_repo.py <チームリポジトリのパス>
+    python scripts/extract_from_team_repo.py <チームリポジトリのパス> [<出力先。既定は source/>]
 """
 
 from __future__ import annotations
@@ -39,8 +47,8 @@ ROOT = HERE.parent
 DESTINATION = ROOT / "source"
 IDENTITY_FILE = HERE / "identity.local.json"
 
-# コピーするファイル（自分が単独で書いたもの）
-EXPECTED_FILES = [
+# 自分が単独で書いたもの
+SOLE_FILES = [
     "backend/.env.example",
     "backend/vitest.config.ts",
     "backend/scripts/seed-demo-posts.js",
@@ -85,6 +93,65 @@ EXPECTED_FILES = [
     "frontend/test/users_screen_test.dart",
 ]
 
+# 自分と他のメンバーが共同で編集したもの
+SHARED_FILES = [
+    "backend/src/routes/posts.ts",
+    "backend/src/server.ts",
+    "backend/src/services/likeService.ts",
+    "backend/src/services/postService.ts",
+    "backend/src/types/post.ts",
+    "backend/tests/posts.test.ts",
+    "frontend/.env.example",
+    "frontend/android/app/build.gradle.kts",
+    "frontend/android/app/src/main/AndroidManifest.xml",
+    "frontend/lib/main.dart",
+    "frontend/lib/models/post.dart",
+    "frontend/lib/screens/create_post_screen.dart",
+    "frontend/lib/screens/map_screen.dart",
+    "frontend/lib/screens/post_detail_screen.dart",
+    "frontend/lib/screens/timeline_screen.dart",
+    "frontend/lib/services/api_client.dart",
+    "frontend/lib/widgets/post_card.dart",
+    "frontend/pubspec.yaml",
+    "frontend/test/create_post_screen_test.dart",
+    "frontend/test/post_model_test.dart",
+    "frontend/test/timeline_screen_test.dart",
+    "frontend/test/widget_test.dart",
+    "frontend/web/index.html.template",
+]
+
+# 自分は触っていないが、ビルドと起動に必要なもの
+SUPPORT_FILES = [
+    "backend/src/services/distanceService.ts",
+    "frontend/.metadata",
+    "frontend/analysis_options.yaml",
+    "frontend/lib/services/location_service.dart",
+    "frontend/tools/generate_web_index.ps1",
+    "frontend/web/favicon.png",
+    "frontend/web/icons/Icon-192.png",
+    "frontend/web/icons/Icon-512.png",
+    "frontend/web/icons/Icon-maskable-192.png",
+    "frontend/web/icons/Icon-maskable-512.png",
+    "frontend/web/manifest.json",
+    "frontend/android/.gitignore",
+    "frontend/android/app/src/debug/AndroidManifest.xml",
+    "frontend/android/app/src/main/kotlin/com/example/local_area_sns/MainActivity.kt",
+    "frontend/android/app/src/main/res/drawable-v21/launch_background.xml",
+    "frontend/android/app/src/main/res/drawable/launch_background.xml",
+    "frontend/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    "frontend/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    "frontend/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    "frontend/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    "frontend/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    "frontend/android/app/src/main/res/values-night/styles.xml",
+    "frontend/android/app/src/main/res/values/styles.xml",
+    "frontend/android/app/src/profile/AndroidManifest.xml",
+    "frontend/android/build.gradle.kts",
+    "frontend/android/gradle.properties",
+    "frontend/android/gradle/wrapper/gradle-wrapper.properties",
+    "frontend/android/settings.gradle.kts",
+]
+
 # 固有名詞を含まない、常に弾きたいもの
 GENERIC_FORBIDDEN = {
     "Windowsのローカルパス": re.compile(r"[A-Za-z]:\\Users\\", re.IGNORECASE),
@@ -114,18 +181,24 @@ def run(repository: Path, *arguments: str) -> str:
     return result.stdout
 
 
-def solely_authored(repository: Path, email: str) -> set[str]:
-    """自分だけが触ったファイルを git の履歴から求める。"""
-    found = set()
+def authors_of(repository: Path, path: str) -> set[str]:
+    return {
+        line.strip()
+        for line in run(repository, "log", "--format=%ae", "--", path).splitlines()
+        if line.strip()
+    }
+
+
+def classify(repository: Path, email: str) -> tuple[set[str], set[str]]:
+    """自分だけが触ったファイルと、自分と他のメンバーが触ったファイルを git の履歴から求める。"""
+    sole, shared = set(), set()
     for path in run(repository, "ls-files").splitlines():
-        authors = {
-            line.strip()
-            for line in run(repository, "log", "--format=%ae", "--", path).splitlines()
-            if line.strip()
-        }
+        authors = authors_of(repository, path)
         if authors == {email}:
-            found.add(path)
-    return found
+            sole.add(path)
+        elif email in authors:
+            shared.add(path)
+    return sole, shared
 
 
 def build_checks(forbidden_words: list[str]) -> dict[str, re.Pattern[str]]:
@@ -152,27 +225,42 @@ def scan(directory: Path, checks: dict[str, re.Pattern[str]]) -> list[str]:
     return problems
 
 
+def check(label: str, actual: set[str], expected: set[str]) -> bool:
+    if actual == expected:
+        return True
+    print(f"{label}: git の判定結果が想定と違います。")
+    for path in sorted(expected - actual):
+        print(f"  想定にあるが判定に出ない: {path}")
+    for path in sorted(actual - expected):
+        print(f"  判定に出たが想定にない: {path}")
+    return False
+
+
 def main() -> None:
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         sys.exit(__doc__)
     repository = Path(sys.argv[1]).resolve()
+    destination_root = Path(sys.argv[2]).resolve() if len(sys.argv) == 3 else DESTINATION
     if not (repository / ".git").is_dir():
         sys.exit(f"git リポジトリではありません: {repository}")
 
     identity = load_identity()
-    actual = solely_authored(repository, identity["author_email"])
-    expected = set(EXPECTED_FILES)
-    if actual != expected:
-        print("git の判定結果が想定と違います。中止します。")
-        for path in sorted(expected - actual):
-            print(f"  想定にあるが判定に出ない: {path}")
-        for path in sorted(actual - expected):
-            print(f"  判定に出たが想定にない: {path}")
+    email = identity["author_email"]
+    sole, shared = classify(repository, email)
+    # 共同編集のうち、チームの README とチームが操作して溜まった投稿データは収録しない
+    shared -= {"README.md", "backend/data/posts.json"}
+    touched_support = {path for path in SUPPORT_FILES if email in authors_of(repository, path)}
+    ok = check("単独", sole, set(SOLE_FILES))
+    ok = check("共同", shared, set(SHARED_FILES)) and ok
+    ok = check("ビルドに必要なもの（自分が触っていないこと）", touched_support, set()) and ok
+    if not ok:
+        print("中止します。")
         sys.exit(1)
 
+    files = SOLE_FILES + SHARED_FILES + SUPPORT_FILES
     replacements: dict[str, str] = identity.get("replacements", {})
-    for relative in EXPECTED_FILES:
-        destination = DESTINATION / relative
+    for relative in files:
+        destination = destination_root / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(repository / relative, destination)
         try:
@@ -183,13 +271,16 @@ def main() -> None:
             text = text.replace(before, after)
         destination.write_text(text, encoding="utf-8")
 
-    problems = scan(DESTINATION, build_checks(identity.get("forbidden_words", [])))
+    problems = scan(destination_root, build_checks(identity.get("forbidden_words", [])))
     if problems:
         print("個人情報またはローカル情報が残っています。公開しないでください。")
         print("\n".join(problems))
         sys.exit(1)
 
-    print(f"{len(EXPECTED_FILES)} ファイルをコピーし、検査を通過しました。")
+    print(
+        f"{len(files)} ファイル（単独 {len(SOLE_FILES)}・共同 {len(SHARED_FILES)}・"
+        f"ビルドに必要なもの {len(SUPPORT_FILES)}）をコピーし、検査を通過しました。"
+    )
 
 
 if __name__ == "__main__":

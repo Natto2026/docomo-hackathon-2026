@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { readCookie } from '../../src/improvements/auth/middleware';
 import { MIN_PASSWORD_LENGTH, reset } from '../../src/improvements/auth/service';
-import { createApp } from '../../src/server';
+import { createApp } from '../../src/improvements/app';
 
 const PASSWORD = 'correct-horse-battery';
 const OTHER = 'demo-user-3'; // 鍵アカウント

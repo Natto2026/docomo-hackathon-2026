@@ -1,11 +1,3 @@
-/**
- * 【補助実装】このファイルは、このリポジトリのために新しく書いたものである。
- *
- * 元のプロジェクトでは投稿まわりの型をチームで共同編集していた。
- * 共同成果物のためそのままは含めず、自分が書いたコードのコンパイルに
- * 必要な項目だけを定義し直している。
- */
-
 export type PostType = 'normal' | 'realtime';
 
 export type Comment = {
@@ -26,9 +18,11 @@ export type Post = {
   latitude: number;
   longitude: number;
   category?: string;
+  /** 投稿場所の店・施設名(任意)。Places の候補から選んだ場合は placeId / placeAddress も入る */
   placeName?: string;
   placeId?: string;
   placeAddress?: string;
+  /** 施設の種類(cafe, convenience など。Places / OSM の分類をそのまま保存) */
   placeType?: string;
   postType: PostType;
   likeCount: number;

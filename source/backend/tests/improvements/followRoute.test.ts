@@ -16,7 +16,7 @@ import { createDynamoFollowStore } from '../../src/improvements/follows/dynamoFo
 import { createJsonFollowStore } from '../../src/improvements/follows/jsonFollowStore';
 import { recordCommands } from '../../src/improvements/follows/recordingClient';
 import { FollowStore } from '../../src/improvements/follows/store';
-import { createApp } from '../../src/server';
+import { createApp } from '../../src/improvements/app';
 import { createFakeDynamo, FOLLOW_TABLE } from './fakeDynamo';
 
 const FOLLOWER = 'route-test-follower';

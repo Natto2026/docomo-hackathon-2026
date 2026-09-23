@@ -6,3 +6,12 @@ dist/
 .env
 uploads/
 *.log
+
+# Flutter の生成物
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+android/local.properties
+# API キーを埋め込んで生成するため公開しない（元は web/index.html.template）
+source/frontend/web/index.html

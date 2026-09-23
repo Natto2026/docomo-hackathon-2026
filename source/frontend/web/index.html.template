@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+  <head>
+    <base href="$FLUTTER_BASE_HREF" />
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta name="description" content="近くの発見" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="local_area_sns" />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <title>近くの発見</title>
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_WEB_API_KEY__&language=ja&region=JP"></script>
+    <script>
+      // ---- 地図上の店アイコン(Google の POI)が押されたら、Google 標準の店カードに出た店名・住所を読み取る ----
+      // Flutter のプラグインは緯度経度しか渡してくれないので、地図の生成をフックして placeId を控える。
+      // Google 標準の店カードはそのまま出す(止めない)。カードが描画されたら、その文字を店名・住所として拾う。
+      window.__poiClick = null;
+      // Google 標準の店カード(.gm-style-iw)に描画された文字を読む。1行目が店名、住所らしい行を住所とみなす。
+      // クラス名は Google 側で変わることがあるため、特定のクラスには頼らない。
+      function readPoiCard() {
+        var containers = document.querySelectorAll(".gm-style-iw");
+        for (var i = 0; i < containers.length; i++) {
+          var text = (containers[i].innerText || "").split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
+          if (!text.length) continue;
+          var name = text[0];
+          if (!name || /Google マップで開く/.test(name) || name === "投稿場所" || name === "現在地") continue;
+          var address = text.slice(1).filter(function (line) {
+            return /〒|日本|都|道|府|県|市|区|町|村|丁目/.test(line) && !/Google/.test(line);
+          }).join(" ");
+          return { name: name, address: address || null };
+        }
+        return null;
+      }
+      (function () {
+        if (!window.google || !google.maps || !google.maps.Map) return;
+        var OriginalMap = google.maps.Map;
+        function PatchedMap(element, options) {
+          var map = new OriginalMap(element, options);
+          map.addListener('click', function (event) {
+            if (!(event && event.placeId && event.latLng)) return;
+            var click = { placeId: event.placeId, latitude: event.latLng.lat(), longitude: event.latLng.lng(), at: Date.now(), name: null, address: null };
+            window.__poiClick = click;
+            var attempts = 0;
+            var timer = setInterval(function () {
+              attempts += 1;
+              var card = readPoiCard();
+              if (card) {
+                click.name = card.name;
+                click.address = card.address;
+                clearInterval(timer);
+              } else if (attempts > 25) {
+                clearInterval(timer);
+              }
+            }, 100);
+          });
+          return map;
+        }
+        PatchedMap.prototype = OriginalMap.prototype;
+        Object.setPrototypeOf(PatchedMap, OriginalMap);
+        google.maps.Map = PatchedMap;
+      })();
+      // ---- Google の店カードが画面に描画されたら、その内容を控える(クリックの横取りに依存しない方式) ----
+      window.__poiCard = null;
+      (function () {
+        function capture() {
+          // 直前(3秒以内)に地図の店アイコンが押されたときだけ拾う。
+          // これが無いと、自分たちのピンの吹き出し(店名入り)まで店として誤認し、
+          // その後に別の地点をタップしたときに関係のない店名が付いてしまう。
+          var click = window.__poiClick;
+          if (!click || Date.now() - click.at > 3000) return;
+          var card = readPoiCard();
+          if (card && card.name) window.__poiCard = { name: card.name, address: card.address, at: Date.now() };
+        }
+        var observer = new MutationObserver(function () { capture(); });
+        function start() {
+          if (!document.body) { setTimeout(start, 100); return; }
+          observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        }
+        start();
+      })();
+      // 直近(5秒以内)に描画された Google の店カードの内容(店名・住所)。
+      window.readLastPoiCard = function () {
+        var card = window.__poiCard;
+        if (!card || Date.now() - card.at > 5000) return null;
+        return JSON.stringify(card);
+      };
+      window.clearLastPoiCard = function () { window.__poiCard = null; };
+
+      // 直近(5秒以内)の店アイコンのクリック情報。店名が読み取れるまで name は null。
+      window.readPoiClick = function () {
+        var click = window.__poiClick;
+        if (!click || Date.now() - click.at > 5000) return null;
+        return JSON.stringify(click);
+      };
+      window.clearPoiClick = function () { window.__poiClick = null; };
+
+      // ---- 地図と同じ Google のデータで周辺の店を探す(Places API (New) が有効なときだけ動く) ----
+      window.nearbyPlaces = async function (lat, lng, radius, max) {
+        const { Place } = await google.maps.importLibrary('places');
+        const { places } = await Place.searchNearby({
+          fields: ['id', 'displayName', 'formattedAddress', 'location', 'primaryType'],
+          locationRestriction: { center: { lat: lat, lng: lng }, radius: radius },
+          maxResultCount: max,
+          rankPreference: 'DISTANCE',
+          language: 'ja',
+          region: 'jp',
+        });
+        return JSON.stringify((places || []).map(function (place) {
+          return {
+            id: place.id,
+            name: place.displayName,
+            address: place.formattedAddress,
+            latitude: place.location ? place.location.lat() : null,
+            longitude: place.location ? place.location.lng() : null,
+            primaryType: place.primaryType || null,
+          };
+        }));
+      };
+    </script>
+  </head>
+  <body>
+    <script src="flutter_bootstrap.js" async></script>
+  </body>
+</html>

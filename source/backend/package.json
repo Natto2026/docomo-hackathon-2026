@@ -4,7 +4,8 @@
   "description": "ハッカソンで自分が担当したバックエンドの抽出（単体で動かせる形にしたもの）",
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "test": "vitest run",
+    "dev:improved": "ts-node src/improvements/app.ts",
+    "test": "vitest run -c vitest.repo.config.ts",
     "typecheck": "tsc --noEmit",
     "smoke:aws": "ts-node src/improvements/follows/smokeAws.ts"
   },

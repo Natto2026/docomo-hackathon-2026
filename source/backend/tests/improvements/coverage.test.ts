@@ -8,7 +8,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { headlineOf } from '../../src/improvements/coverage/route';
-import { createApp } from '../../src/server';
+import { createApp } from '../../src/improvements/app';
 import {
   COMPARISON_RADII_METERS,
   isSamePlace,
