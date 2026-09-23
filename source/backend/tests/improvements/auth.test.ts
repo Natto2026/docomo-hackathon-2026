@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { readCookie } from '../../src/improvements/auth/middleware';
 import { MIN_PASSWORD_LENGTH, reset } from '../../src/improvements/auth/service';
-import { createApp } from '../../src/server';
+import { createApp } from '../../src/improvements/app';
 
 const PASSWORD = 'correct-horse-battery';
 const OTHER = 'demo-user-3'; // 鍵アカウント
@@ -151,6 +151,16 @@ describe('なりすましの防止', () => {
     expect(mine.body.users.map((user: { id: string }) => user.id)).toEqual(['demo-user-2']);
 
     await agent.delete('/api/users/demo-user-2/follow').send({});
+  });
+
+  it('他人を名乗ってコメントしても、自分としてしか記録されない（提出時点のルーターまで届く）', async () => {
+    const app = secured();
+    const agent = await loginAs(app, 'demo-user-2');
+    const response = await agent
+      .post('/api/posts/post-002/comments')
+      .send({ body: 'なりすましの確認', authorId: OTHER });
+    expect(response.status).toBe(201);
+    expect(response.body.comment.authorId).toBe('demo-user-2');
   });
 
   it('未ログインの閲覧では、鍵アカウントの投稿は見えない', async () => {

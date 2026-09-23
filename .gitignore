@@ -6,3 +6,17 @@ dist/
 .env
 uploads/
 *.log
+
+# Flutter の生成物
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+android/local.properties
+# API キーを埋め込んで生成するため公開しない（元は web/index.html.template）
+source/frontend/web/index.html
+
+# Python の生成物
+__pycache__/
+# 書き込み途中の一時ファイル（jsonStore が作る）
+*.tmp
