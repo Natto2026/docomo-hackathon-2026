@@ -153,6 +153,16 @@ describe('なりすましの防止', () => {
     await agent.delete('/api/users/demo-user-2/follow').send({});
   });
 
+  it('他人を名乗ってコメントしても、自分としてしか記録されない（提出時点のルーターまで届く）', async () => {
+    const app = secured();
+    const agent = await loginAs(app, 'demo-user-2');
+    const response = await agent
+      .post('/api/posts/post-002/comments')
+      .send({ body: 'なりすましの確認', authorId: OTHER });
+    expect(response.status).toBe(201);
+    expect(response.body.comment.authorId).toBe('demo-user-2');
+  });
+
   it('未ログインの閲覧では、鍵アカウントの投稿は見えない', async () => {
     const response = await request(secured()).get(
       `/api/users/${OTHER}/posts?viewerId=${OTHER}`, // 本人を名乗っても通らない

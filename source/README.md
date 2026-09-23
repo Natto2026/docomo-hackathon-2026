@@ -48,7 +48,7 @@
 | `frontend/lib/models/post.dart` | 65 / 137 行（47%） |
 | `frontend/lib/screens/create_post_screen.dart` | 326 / 475 行（69%） |
 | `frontend/lib/screens/map_screen.dart` | 410 / 443 行（93%） |
-| `frontend/lib/screens/post_detail_screen.dart` | 168 / 320 行（52%） |
+| `frontend/lib/screens/post_detail_screen.dart` | 168 / 320 行（53%） |
 | `frontend/lib/screens/timeline_screen.dart` | 163 / 217 行（75%） |
 | `frontend/lib/services/api_client.dart` | 275 / 365 行（75%） |
 | `frontend/lib/widgets/post_card.dart` | 31 / 94 行（33%） |
@@ -186,7 +186,7 @@ DynamoDB のクライアントは外から渡せるので、テストでは偽�
 提出時点の `.env.example` には手を入れていないので、`.env` に書き足す行の雛形は `infra/env.example` に分けた。
 
 **テストの考え方**。同じテスト群を JSON 版と DynamoDB 版の両方に流す契約テストにして、
-保存先を替えても振る舞いが変わらないことを確かめている（保存の層15件 × 2、API 7件 × 2）。
+保存先を替えても振る舞いが変わらないことを確かめている（保存の層15件 × 2、API 8件 × 2）。
 DynamoDB 版は実際の AWS を使わず、条件式を解釈するインメモリの偽物（`tests/improvements/fakeDynamo.ts`）で動かす。
 応答を固定で返すモックでは、条件式を書き間違えてもテストが通ってしまうためである。
 条件を外すと二重リクエスト・二重承認・取り消し後の承認のテストが落ちることは、実際に外して確かめた。
@@ -200,13 +200,16 @@ Scan を使っていないことは、発行したコマンドの種類を記録
 プロフィール写真の登録と削除は提出時のルーターが応答するので、その応答に含まれるフォロワー数などは JSON の値になる。
 利用者の一覧は1人につき4回の問い合わせになる。本番なら件数を利用者の側に持たせる。
 一覧の並びは、JSON 版は追加順、DynamoDB 版はIDの順になる。
+DynamoDB 版では、鍵アカウントの投稿へのいいねとコメントが、承認されたあとも 403 になる。
+手前のルーターは DynamoDB のフォロー関係で通すが、書き込みを行う提出時点のルーターが
+JSON のフォロー関係で判定し直すためである。提出時点のファイルに手を入れないと直せないので、残している。
 
 ## 動かし方（バックエンド）
 
 ```bash
 cd source/backend
 npm install
-npm test               # 提出時点のテストと、改良のテストをすべて実行する（141件）
+npm test               # 提出時点のテストと、改良のテストをすべて実行する（144件）
 npm run dev            # 提出時点のアプリを http://localhost:3000 で起動する
 npm run dev:improved   # 改良（ログイン・踏破率・保存先の切り替え）を載せて http://127.0.0.1:3000 で起動する
 npm run smoke:aws   # 実際の AWS への確認。設定が無ければ何もせず説明を出して終わる
@@ -225,13 +228,16 @@ Flutter 3 系で、Web（Chrome）と Android で動く。バックエンドを�
 cd source/frontend
 flutter pub get
 flutter test                  # 画面のテスト（44件）
-copy .env.example .env        # GOOGLE_MAPS_WEB_API_KEY に、ブラウザ用に制限した Google Maps の鍵を書く
+copy .env.example .env        # frontend の .env。GOOGLE_MAPS_WEB_API_KEY に、ブラウザ用に制限した Google Maps の鍵を書く
 powershell -File tools/generate_web_index.ps1   # 鍵を埋め込んだ web/index.html を作る（公開しない）
 flutter run -d chrome
 ```
 
 鍵を持っていない場合は、`web/index.html.template` を `web/index.html` に写せば起動できる（地図は「エラーが発生しました」と表示される）。
 Android のエミュレーターでは、API の接続先が `http://10.0.2.2:3000/api` になる。
+投稿画面を開くと周辺の店・施設を探しに行く。OpenStreetMap の公開サーバーが混んでいると応答が返らず、
+候補の欄が読み込み中のままになることがある（バックエンドの `.env` に `GOOGLE_PLACES_API_KEY` を書くと Google に切り替わる）。
+Android での起動は、手元に Android SDK がないため確かめていない。Web（Chrome）では、タイムライン・利用者・投稿の画面が表示されることを確かめた。
 パスに日本語などが含まれると `flutter analyze` が失敗することがある（Dart の解析サーバーの制約）。
 
 ## 設計上の判断

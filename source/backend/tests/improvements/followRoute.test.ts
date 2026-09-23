@@ -108,6 +108,34 @@ describe.each(implementations)('保存先を選べるフォローの API: %s', (
     expect(feed.body.posts.every((post: { authorId: string }) => post.authorId === PRIVATE_TARGET)).toBe(true);
   });
 
+  it('いいねとコメントは、見られる投稿なら提出時点のルーターが書き込み、見られない投稿は 403 で書き込まない', async () => {
+    const PUBLIC_POST = 'post-002'; // demo-user-2（公開アカウント）の投稿
+    const PRIVATE_POST = 'post-003'; // demo-user-3（鍵アカウント）の投稿
+
+    const before = await request(app).get(`/api/posts/${PUBLIC_POST}?viewerId=${FOLLOWER}`);
+    const liked = await request(app).post(`/api/posts/${PUBLIC_POST}/like`).send({ userId: FOLLOWER });
+    expect(liked.status).toBe(200);
+    expect(liked.body).toMatchObject({ postId: PUBLIC_POST, liked: true, likeCount: before.body.likeCount + 1 });
+    const unliked = await request(app).post(`/api/posts/${PUBLIC_POST}/like`).send({ userId: FOLLOWER });
+    expect(unliked.body).toMatchObject({ liked: false, likeCount: before.body.likeCount });
+
+    const commented = await request(app)
+      .post(`/api/posts/${PUBLIC_POST}/comments`)
+      .send({ body: '見られる投稿へのコメント', authorId: FOLLOWER });
+    expect(commented.status).toBe(201);
+    expect(commented.body.comment).toMatchObject({ postId: PUBLIC_POST, authorId: FOLLOWER });
+
+    const hiddenBefore = await request(app).get(`/api/posts/${PRIVATE_POST}?viewerId=${PRIVATE_TARGET}`);
+    expect((await request(app).post(`/api/posts/${PRIVATE_POST}/like`).send({ userId: FOLLOWER })).status).toBe(403);
+    const hiddenComment = await request(app)
+      .post(`/api/posts/${PRIVATE_POST}/comments`)
+      .send({ body: '見られない投稿へのコメント', authorId: FOLLOWER });
+    expect(hiddenComment.status).toBe(403);
+    const hiddenAfter = await request(app).get(`/api/posts/${PRIVATE_POST}?viewerId=${PRIVATE_TARGET}`);
+    expect(hiddenAfter.body.likeCount).toBe(hiddenBefore.body.likeCount);
+    expect(hiddenAfter.body.commentCount).toBe(hiddenBefore.body.commentCount);
+  });
+
   it('二重の承認は 404 を JSON で返す', async () => {
     await request(app).post(`/api/users/${PRIVATE_TARGET}/follow`).send({ followerId: FOLLOWER });
     expect((await request(app).post(`/api/users/${PRIVATE_TARGET}/requests/${FOLLOWER}/approve`)).status).toBe(200);
