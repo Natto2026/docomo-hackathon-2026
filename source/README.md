@@ -186,7 +186,7 @@ DynamoDB のクライアントは外から渡せるので、テストでは偽�
 提出時点の `.env.example` には手を入れていないので、`.env` に書き足す行の雛形は `infra/env.example` に分けた。
 
 **テストの考え方**。同じテスト群を JSON 版と DynamoDB 版の両方に流す契約テストにして、
-保存先を替えても振る舞いが変わらないことを確かめている（保存の層15件 × 2、API 8件 × 2）。
+保存先を替えても振る舞いが変わらないことを、保存の層と API の両方で確かめている。
 DynamoDB 版は実際の AWS を使わず、条件式を解釈するインメモリの偽物（`tests/improvements/fakeDynamo.ts`）で動かす。
 応答を固定で返すモックでは、条件式を書き間違えてもテストが通ってしまうためである。
 条件を外すと二重リクエスト・二重承認・取り消し後の承認のテストが落ちることは、実際に外して確かめた。
@@ -209,7 +209,7 @@ JSON のフォロー関係で判定し直すためである。提出時点のフ
 ```bash
 cd source/backend
 npm install
-npm test               # 提出時点のテストと、改良のテストをすべて実行する（144件）
+npm test               # 提出時点のテストと、改良のテストをすべて実行する
 npm run dev            # 提出時点のアプリを http://localhost:3000 で起動する
 npm run dev:improved   # 改良（ログイン・踏破率・保存先の切り替え）を載せて http://127.0.0.1:3000 で起動する
 npm run smoke:aws   # 実際の AWS への確認。設定が無ければ何もせず説明を出して終わる
@@ -227,7 +227,7 @@ Flutter 3 系で、Web（Chrome）と Android で動く。バックエンドを�
 ```powershell
 cd source/frontend
 flutter pub get
-flutter test                  # 画面のテスト（44件）
+flutter test                  # 画面のテスト
 copy .env.example .env        # frontend の .env。GOOGLE_MAPS_WEB_API_KEY に、ブラウザ用に制限した Google Maps の鍵を書く
 powershell -File tools/generate_web_index.ps1   # 鍵を埋め込んだ web/index.html を作る（公開しない）
 flutter run -d chrome
@@ -243,11 +243,7 @@ Android での起動は、手元に Android SDK がないため確かめてい�
 ## 設計上の判断
 
 同時書き込みへの対処は `src/services/jsonStore.ts` にある。
-保存先を JSON ファイルにした結果、同じファイルへの読み書きが重なると内容が壊れるため、
-ファイルごとに直列化のキューを持ち、書き込みは一時ファイルへ出してから置き換えている。
-置き換えは他のプロセスがそのファイルを読んでいると失敗することがあるので、
-少し待って再試行し、それでも駄目なら直接書き込む。原子的ではないが、
-書き込みが失われるよりはましだという判断である。理由はコードのコメントに残している。
+どう対処し、なぜそうしたかは[リポジトリのREADME](../README.md#同時書き込みへの対処)に書いている。
 
 審査での指摘と振り返りの課題にどう対応したかは[リポジトリのREADME](../README.md#ハッカソン後に取り組んだこと)に、
 残っている課題は[今後の改善点](../README.md#今後の改善点)に書いている。
