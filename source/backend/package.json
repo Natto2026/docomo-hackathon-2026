@@ -2,6 +2,9 @@
   "private": true,
   "version": "0.1.0",
   "description": "ハッカソンで自分が担当したバックエンドの抽出（単体で動かせる形にしたもの）",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "ts-node src/server.ts",
     "dev:improved": "ts-node src/improvements/app.ts",

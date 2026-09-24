@@ -206,6 +206,8 @@ JSON のフォロー関係で判定し直すためである。提出時点のフ
 
 ## 動かし方（バックエンド）
 
+Node.js 20 以上が必要である（AWS SDK for JavaScript v3 が 20 以上を求めるため）。
+
 ```bash
 cd source/backend
 npm install
